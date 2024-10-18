@@ -31,6 +31,7 @@ const (
 	DecreaseYearKey = '<'
 	AppendBondsKey  = 'a'
 	SaveBondsKey    = 's'
+	LoadBondsKey    = 'l'
 
 	// DefaultTimeout = 500
 )
@@ -70,6 +71,8 @@ func HelpWindow() {
 		scr.MovePrintf(y, x, "Append Bonds: %c", AppendBondsKey)
 		y++
 		scr.MovePrintf(y, x, "Save Bonds: %c", SaveBondsKey)
+		y++
+		scr.MovePrintf(y, x, "Load Bonds: %c", LoadBondsKey)
 		y++
 
 		input = scr.GetChar()
@@ -196,13 +199,18 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 //     [ ] for log?
 
 // TODO:
-// [ ] by key save bonds data in json in default path
+// [1/2] by key save bonds data in json in default path
+//      for now - ask for path and save into it
+
+// TODO:
+// [ ] create terminal window (and maybe struct for wrap window)
+//      ask all input through terminal
+//      print all error, output to terminal
 
 func main() {
 	stdscr, err := goncurses.Init()
 	goncurses.Echo(false)
 	goncurses.Cursor(0)
-	// goncurses.StdScr().Timeout(DefaultTimeout)
 
 	if err != nil {
 		panic(err)
@@ -286,7 +294,50 @@ func main() {
 			}
 
 		case SaveBondsKey:
+            {
+                msg := "Filename for save: "
+                x := MaxX / 2 - len(msg) - 6
 
+                goncurses.Echo(true)
+                goncurses.Cursor(1)
+                filename, err := PopUpAskString(MaxY / 2 - 1, x, msg, len(msg) + 2 + 10)
+                goncurses.Echo(false)
+                goncurses.Cursor(0)
+
+                if err != nil {
+                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    continue
+                }
+
+                err = AllBonds.SaveToFile(filename)
+
+                if err != nil {
+                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                }
+            }
+
+        case LoadBondsKey:
+            {
+                msg := "Filename for load: "
+                x := MaxX / 2 - len(msg) - 6
+                goncurses.Echo(true)
+                goncurses.Cursor(1)
+                filename, err := PopUpAskString(MaxY / 2 - 1, x, msg, len(msg) + 2 + 10)
+                goncurses.Echo(false)
+                goncurses.Cursor(0)
+
+                if err != nil {
+                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    continue
+                }
+
+                err = AllBonds.LoadFromFile(filename)
+
+                if err != nil {
+                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                }
+
+            }
 		}
 
 		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
