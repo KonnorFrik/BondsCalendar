@@ -1,16 +1,18 @@
 package bonds
 
 import (
+	"encoding/json"
+	"os"
 	"time"
 )
 
 /* Struct for describe one bonds */
 type BondsData struct {
-	Name              string
-	CouponCount       int
-	CouponPeriod      time.Duration
-	CouponNearPayDate time.Time
-	PayDates          []time.Time
+    Name              string         `json:"name"`
+	CouponCount       int            `json:"couponCount"`
+	CouponPeriod      time.Duration  `json:"couponPeriod"`
+	CouponNearPayDate time.Time      `json:"nearPayDate"`
+	PayDates          []time.Time    `json:"-"`
 }
 
 /* Struct for store multiply bonds */
@@ -27,6 +29,54 @@ func BondsNew() *Bonds {
 	obj.Bonds = make([]*BondsData, 0)
 
 	return obj
+}
+
+/* Save all appended bonds into file as json */
+func (self *Bonds) SaveToFile(filename string) error {
+    file, err := os.OpenFile(filename, os.O_CREATE | os.O_WRONLY, 0666)
+
+    if err != nil {
+        return err
+    }
+
+    defer file.Close()
+
+    encoder := json.NewEncoder(file)
+    err = encoder.Encode(self.Bonds)
+
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+/*
+Save all appended bonds into file as json
+Overwrite current Bonds array
+*/
+func (self *Bonds) LoadFromFile(filename string) error {
+    file, err := os.Open(filename)
+
+    if err != nil {
+        return err
+    }
+
+    defer file.Close()
+    self.Bonds = make([]*BondsData, 0)
+
+    encoder := json.NewDecoder(file)
+    err = encoder.Decode(&self.Bonds)
+
+    if err != nil {
+        return err
+    }
+
+    for _, obj := range self.Bonds {
+        obj.CalcCouponDates()
+    }
+
+    return nil
 }
 
 /* Append new bonds, also call CalcCouponDates before append */
