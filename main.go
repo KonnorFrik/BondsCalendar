@@ -182,6 +182,7 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 
 // TODO:
 // [1/2] by key save bonds data in json in default path
+// [ ] Create way to init default path and save into it
 //      for now - ask for path and save into it
 
 // TODO:
