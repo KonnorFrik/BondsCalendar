@@ -4,6 +4,7 @@ import (
 	"fmt"
 	// "os"
 	"bonds_payment_calendar/bonds"
+	"bonds_payment_calendar/terminal"
 	"time"
 
 	"github.com/gbin/goncurses"
@@ -20,6 +21,7 @@ var (
 	MaxY int
 
 	CurrentYear = time.Now().Year()
+    Terminal = terminal.TerminalNew()
 
 	AllBonds = bonds.BondsNew()
 )
@@ -33,7 +35,7 @@ const (
 	SaveBondsKey    = 's'
 	LoadBondsKey    = 'l'
 
-	// DefaultTimeout = 500
+    DefaultDateLayout = "02.01.2006"
 )
 
 func PrintSimpleDate(obj time.Time) {
@@ -126,56 +128,36 @@ func DrawInfoByYear(win *goncurses.Window, sizeX, sizeY int, yearInfo YearInfo) 
 }
 
 func CreateBondsByUser() (*bonds.BondsData, error) {
-	winHeight, winWidth := MaxY/2, MaxX/2
-	winPosY, winPosX := MaxY/4, MaxX/4
-	win, err := goncurses.NewWindow(winHeight, winWidth, winPosY, winPosX)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer win.Delete()
-	goncurses.Echo(true)
-	goncurses.Cursor(1)
-	win.Box(0, 0)
-	win.MovePrint(0, winWidth/2-6, "|Bonds Create|")
-
-	var x int = 2
-	var y int = 1
-
+	Terminal.Print("***Bonds Create***")
 	question := "Name: "
-	name, err := AskString(win, y, x, question, winWidth-2-len(question))
+	name, err := Terminal.AskString(question)
 
 	if err != nil {
 		return nil, err
 	}
 
-	y++
 	question = "Coupons count: "
-	couponCount, err := AskInt(win, y, x, question, winWidth-2-len(question))
+	couponCount, err := Terminal.AskInt(question)
 
 	if err != nil {
 		return nil, err
 	}
 
-	y++
 	question = "Nearest pay day[dd.mm.yyyy]: "
-	couponNearestPayDate, err := AskDate(win, y, x, question, winWidth-2-len(question), "02.01.2006")
+	couponNearestPayDate, err := Terminal.AskDate(question, DefaultDateLayout)
 
 	if err != nil {
 		return nil, err
 	}
 
-	y++
 	question = "Next pay day[dd.mm.yyyy]: "
-	couponNextPayDate, err := AskDate(win, y, x, question, winWidth-2-len(question), "02.01.2006")
+	couponNextPayDate, err := Terminal.AskDate(question, DefaultDateLayout)
+
+	Terminal.Print("******************")
 
 	if err != nil {
 		return nil, err
 	}
-
-	goncurses.Echo(false)
-	goncurses.Cursor(0)
 
 	result := bonds.BondsDataNew()
 	result.Name = name
@@ -227,7 +209,7 @@ func main() {
 	}
 
 	defer main.Delete()
-	infoHeight, infoWidth := MaxY-1, (MaxX/3)*1
+	infoHeight, infoWidth := MaxY / 2, (MaxX/3)*1
 	infoPosY, infoPosX := 0, (MaxX/3)*2
 	info, err := goncurses.NewWindow(infoHeight, infoWidth, infoPosY, infoPosX)
 
@@ -235,14 +217,22 @@ func main() {
 		panic(err)
 	}
 
-	// data := bonds.BondsDataNew()
-	// data.Name = "test";
-	// data.CouponCount = 2;
-	// data.CouponNearPayDate = bonds.CouponPayDay(2024, 10, 31);
-	// data.CouponPeriod = bonds.CouponPeriodCreate(data.CouponNearPayDate, bonds.CouponPayDay(2025, 5, 2));
-	//
-	// AllBonds.Append(data)
-	// AllBonds.Append(data)
+    err = Terminal.Init(terminal.TerminalSettings{
+        Title: "|Terminal|",
+        SizeY: infoHeight - 1,
+        SizeX: infoWidth,
+        PosX: infoPosX,
+        PosY: infoHeight,
+        DefaultEcho: false,
+        DefaultCursor: 0,
+    })
+
+    if err != nil {
+        panic(err)
+    }
+
+    defer Terminal.Delete()
+    Terminal.Print("Inited successfully")
 
 	var year int = CurrentYear
 	var graphOffsetX int = (mainWidth - 6) / 12
@@ -259,7 +249,7 @@ func main() {
 		switch input {
 		case ExitKey:
 			{
-				tmp := PopUpText(mainHeight/2-3, mainWidth/2-5, "Really exit?[y/n]")
+                tmp := Terminal.AskChar("Really exit?[y/n]")
 
 				if tmp == 'y' || tmp == 'Y' {
 					loop = false
@@ -285,7 +275,7 @@ func main() {
 				data, err := CreateBondsByUser()
 
 				if err != nil {
-					PopUpText(MaxY/2, MaxX/2-5, err.Error())
+                    Terminal.Print(err.Error())
 
 				} else {
 					AllBonds.Append(data)
@@ -296,45 +286,34 @@ func main() {
 		case SaveBondsKey:
             {
                 msg := "Filename for save: "
-                x := MaxX / 2 - len(msg) - 6
-
-                goncurses.Echo(true)
-                goncurses.Cursor(1)
-                filename, err := PopUpAskString(MaxY / 2 - 1, x, msg, len(msg) + 2 + 10)
-                goncurses.Echo(false)
-                goncurses.Cursor(0)
+                filename, err := Terminal.AskString(msg)
 
                 if err != nil {
-                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    Terminal.Print(err.Error())
                     continue
                 }
 
                 err = AllBonds.SaveToFile(filename)
 
                 if err != nil {
-                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    Terminal.Print(err.Error())
                 }
             }
 
         case LoadBondsKey:
             {
                 msg := "Filename for load: "
-                x := MaxX / 2 - len(msg) - 6
-                goncurses.Echo(true)
-                goncurses.Cursor(1)
-                filename, err := PopUpAskString(MaxY / 2 - 1, x, msg, len(msg) + 2 + 10)
-                goncurses.Echo(false)
-                goncurses.Cursor(0)
+                filename, err := Terminal.AskString(msg)
 
                 if err != nil {
-                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    Terminal.Print(err.Error())
                     continue
                 }
 
                 err = AllBonds.LoadFromFile(filename)
 
                 if err != nil {
-                    PopUpText(MaxY / 2, MaxX / 2, err.Error())
+                    Terminal.Print(err.Error())
                 }
 
             }
@@ -351,6 +330,8 @@ func main() {
 		stdscr.Refresh()
 		main.Refresh()
 		info.Refresh()
+        Terminal.Refresh()
+
 		input = stdscr.GetChar()
 	}
 }
