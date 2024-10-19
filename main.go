@@ -185,7 +185,7 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 //      for now - ask for path and save into it
 
 // TODO:
-// [ ] create terminal window (and maybe struct for wrap window)
+// [x] create terminal window (and maybe struct for wrap window)
 //      ask all input through terminal
 //      print all error, output to terminal
 
