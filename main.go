@@ -175,7 +175,7 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // TODO:
 // [ ] create different windows
 //     [x] for graph
-//     [ ] for info by year
+//     [1/2] for info by year
 //         payments count
 //         payments in roubles
 //     [ ] for log?
@@ -188,6 +188,12 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // [x] create terminal window (and maybe struct for wrap window)
 //      ask all input through terminal
 //      print all error, output to terminal
+
+// TODO:
+// option 1: Add special commands by tab
+//      press tab -> open window with commands -> run commands by pressing key
+// option 2: Add commands through terminal
+//      press ':' -> ask input in terminal -> run command or print error
 
 func main() {
 	stdscr, err := goncurses.Init()

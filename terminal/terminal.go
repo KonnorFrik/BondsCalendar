@@ -33,7 +33,10 @@ type Terminal struct {
 	Settings TerminalSettings
 }
 
-var ()
+// TODO:
+// fix terminal input
+// terminal must allow input big string without interrupting
+// user type string in terminal -> if length too big -> print part, save part in buffer, and continue input getting
 
 /* Allocate new terminal, without initializing */
 func TerminalNew() *Terminal {
