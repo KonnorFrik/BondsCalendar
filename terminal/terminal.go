@@ -102,25 +102,24 @@ func (self *Terminal) Clear() error {
 Print given msg to terminal. Split msg if len(msg) > sizeX
 */
 func (self *Terminal) Print(msg string) *Terminal {
-	if len(msg) > (self.Settings.SizeX - 2) {
+	if len(msg) >= (self.Settings.SizeX - 2) {
 		// print splitted
 		var startInd int
 		var endInd int = self.Settings.SizeX - 2
 
 		for endInd < len(msg) {
-			partStr := msg[startInd:endInd]
-
-			self.printScrolled(partStr)
+			self.printScrolled(msg[startInd:endInd])
 
 			startInd = endInd
 			endInd += self.Settings.SizeX - 2
 		}
 
+		self.printScrolled(msg[startInd:])
+
 	} else {
 		self.printScrolled(msg)
 	}
 
-	// mb need to call box
 	self.Refresh()
 
 	return self
@@ -132,7 +131,6 @@ func (self *Terminal) AskString(question string) (string, error) {
 	goncurses.Cursor(1)
 
 	result, err := self.askInput(question)
-
 	self.Print(result)
 
 	goncurses.Echo(self.Settings.DefaultEcho)
@@ -190,6 +188,7 @@ func (self *Terminal) AskDate(question, layout string) (time.Time, error) {
 }
 
 func (self *Terminal) printScrolled(oneLineMsg string) {
+    // Clear input field from HLine option 1
 	// self.Window.Move(self.Settings.SizeY - 1, 0)
 	// self.Window.ClearToEOL()
 
@@ -197,6 +196,7 @@ func (self *Terminal) printScrolled(oneLineMsg string) {
 	self.Window.MovePrint(self.Settings.printPosY, self.Settings.printPosX, oneLineMsg)
 	self.Window.ClearToEOL()
 
+    // Clear input field from HLine option 2
 	self.Window.Move(self.Settings.printPosY+1, self.Settings.printPosX)
 	self.Window.ClearToEOL()
 }
