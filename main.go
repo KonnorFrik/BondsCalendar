@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-    // "os"
+	// "os"
 	"bonds_payment_calendar/bonds"
 	"bonds_payment_calendar/terminal"
 	"time"
@@ -34,9 +34,9 @@ const (
 	AppendBondsKey  = 'a'
 	SaveBondsKey    = 's'
 	LoadBondsKey    = 'l'
-    ListBondsKey    = 'v'
-    ScrollUpKey     = 'w'
-    ScrollDownKey   = 's'
+	ListBondsKey    = 'v'
+	ScrollUpKey     = 'w'
+	ScrollDownKey   = 's'
 
 	DefaultDateLayout = "02.01.2006"
 )
@@ -68,10 +68,10 @@ func HelpWindow() {
 		scr.MovePrint(y, width/2-2, "|Help|")
 		y++
 
-        // Info for main window 
+		// Info for main window
 		scr.MovePrintf(y, x, "For main programm")
-        x += 2
-        y++
+		x += 2
+		y++
 		scr.MovePrintf(y, x, "Exit key: %c", ExitKey)
 		y++
 		scr.MovePrintf(y, x, "Next year: %c", IncreaseYearKey)
@@ -87,18 +87,18 @@ func HelpWindow() {
 		scr.MovePrintf(y, x, "List Bonds: %c", ListBondsKey)
 		y++
 
-        // Info for bondsList
-        x = width / 3
-        y = 1
+		// Info for bondsList
+		x = width / 3
+		y = 1
 		scr.MovePrintf(y, x, "For bonds list")
 		y++
-        x += 2
-        scr.MovePrintf(y, x, "Scroll Up: %c", ScrollUpKey)
+		x += 2
+		scr.MovePrintf(y, x, "Scroll Up: %c", ScrollUpKey)
 		y++
-        scr.MovePrintf(y, x, "Scroll Down: %c", ScrollDownKey)
+		scr.MovePrintf(y, x, "Scroll Down: %c", ScrollDownKey)
 		y++
 
-        scr.Refresh()
+		scr.Refresh()
 		input = scr.GetChar()
 	}
 }
@@ -150,65 +150,65 @@ func DrawInfoByYear(win *goncurses.Window, sizeX, sizeY int, yearInfo YearInfo) 
 }
 
 func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
-    win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
+	win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
 
-    if err != nil {
-        Terminal.Print(err.Error())
-        return
-    }
+	if err != nil {
+		Terminal.Print(err.Error())
+		return
+	}
 
-    defer win.Delete()
-    // win.ScrollOk(true)
-    bondsTable := make([]string, 0, len(bondsArr.Bonds))
+	defer win.Delete()
+	// win.ScrollOk(true)
+	bondsTable := make([]string, 0, len(bondsArr.Bonds))
 
-    for id, obj := range bondsArr.Bonds {
-        tmp := fmt.Sprintf("%d. Name:'%s' Coupon remaining:'%d', Near payday:(%02d.%02d.%d)", id, obj.Name, obj.CouponCount, obj.CouponNearPayDate.Day(), obj.CouponNearPayDate.Month(), obj.CouponNearPayDate.Year())
-        bondsTable = append(bondsTable, tmp)
-    }
+	for id, obj := range bondsArr.Bonds {
+		tmp := fmt.Sprintf("%d. Name:'%s' Coupon remaining:'%d', Near payday:(%02d.%02d.%d)", id, obj.Name, obj.CouponCount, obj.CouponNearPayDate.Day(), obj.CouponNearPayDate.Month(), obj.CouponNearPayDate.Year())
+		bondsTable = append(bondsTable, tmp)
+	}
 
-    var startInd int = 0
+	var startInd int = 0
 
-    printSlice := func(startInd int) (int) {
-        var endInd int = min(len(bondsTable) - 1, sizeY - 1)
+	printSlice := func(startInd int) int {
+		var endInd int = min(len(bondsTable)-1, sizeY-1)
 
-        if startInd < 0 {
-            startInd = 0
-        }
+		if startInd < 0 {
+			startInd = 0
+		}
 
-        if startInd >= len(bondsTable) {
-            startInd = len(bondsTable) - 1
-        }
+		if startInd >= len(bondsTable) {
+			startInd = len(bondsTable) - 1
+		}
 
-        var x int = 1
-        var y int = 1
+		var x int = 1
+		var y int = 1
 
-        for ind := startInd; ind <= endInd; ind++ {
-            win.MovePrint(y, x, bondsTable[ind])
-            y++
-        }
+		for ind := startInd; ind <= endInd; ind++ {
+			win.MovePrint(y, x, bondsTable[ind])
+			y++
+		}
 
-        return startInd
-    }
+		return startInd
+	}
 
-    var input goncurses.Key 
+	var input goncurses.Key
 
-    for input != ExitKey {
-        win.Clear()
-        win.Box(0, 0)
-        win.MovePrint(0, sizeX / 2 - 6, "|Bonds List|")
-        win.Refresh()
+	for input != ExitKey {
+		win.Clear()
+		win.Box(0, 0)
+		win.MovePrint(0, sizeX/2-6, "|Bonds List|")
+		win.Refresh()
 
-        switch input {
-        case ScrollUpKey:
-            startInd = printSlice(startInd - 1)
+		switch input {
+		case ScrollUpKey:
+			startInd = printSlice(startInd - 1)
 
-        case ScrollDownKey:
-            startInd = printSlice(startInd + 1)
-        }
+		case ScrollDownKey:
+			startInd = printSlice(startInd + 1)
+		}
 
-        printSlice(startInd)
-        input = win.GetChar()
-    }
+		printSlice(startInd)
+		input = win.GetChar()
+	}
 }
 
 func CreateBondsByUser() (*bonds.BondsData, error) {
@@ -408,8 +408,8 @@ func main() {
 
 			}
 
-        case ListBondsKey:
-            DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
+		case ListBondsKey:
+			DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
 		}
 
 		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
