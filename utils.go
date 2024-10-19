@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gbin/goncurses"
 )
+
 // TODO: make PopUpText working with multiply lines
 //      iterate over given string and split by spaces and print each line
 //      mb add scrolling

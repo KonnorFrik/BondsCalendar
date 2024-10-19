@@ -188,7 +188,7 @@ func (self *Terminal) AskDate(question, layout string) (time.Time, error) {
 }
 
 func (self *Terminal) printScrolled(oneLineMsg string) {
-    // Clear input field from HLine option 1
+	// Clear input field from HLine option 1
 	// self.Window.Move(self.Settings.SizeY - 1, 0)
 	// self.Window.ClearToEOL()
 
@@ -196,7 +196,7 @@ func (self *Terminal) printScrolled(oneLineMsg string) {
 	self.Window.MovePrint(self.Settings.printPosY, self.Settings.printPosX, oneLineMsg)
 	self.Window.ClearToEOL()
 
-    // Clear input field from HLine option 2
+	// Clear input field from HLine option 2
 	self.Window.Move(self.Settings.printPosY+1, self.Settings.printPosX)
 	self.Window.ClearToEOL()
 }
