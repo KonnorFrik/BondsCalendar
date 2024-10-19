@@ -278,6 +278,8 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 //      press tab -> open window with commands -> run commands by pressing key
 // option 2: Add commands through terminal
 //      press ':' -> ask input in terminal -> run command or print error
+//      for command 'map[string]struct{infoStr, callableFunc}' can be created
+
 
 func main() {
 	stdscr, err := goncurses.Init()
