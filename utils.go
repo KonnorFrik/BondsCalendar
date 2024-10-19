@@ -80,15 +80,15 @@ Show one line message and ask for input
 New window height is always 3, width len(msg) + maxInputLen + 2(for box)
 */
 func PopUpAskString(y, x int, msg string, maxInputLen int) (string, error) {
-    winHeight, winWidth := 3, len(msg) + maxInputLen + 2
-    win, err := goncurses.NewWindow(winHeight, winWidth, y, x)
+	winHeight, winWidth := 3, len(msg)+maxInputLen+2
+	win, err := goncurses.NewWindow(winHeight, winWidth, y, x)
 
-    if err != nil {
-        return "", err
-    }
+	if err != nil {
+		return "", err
+	}
 
-    defer win.Delete()
-    win.Box(0, 0)
+	defer win.Delete()
+	win.Box(0, 0)
 	win.MovePrint(1, 1, msg)
 	win.Refresh()
 
@@ -100,4 +100,3 @@ func PopUpAskString(y, x int, msg string, maxInputLen int) (string, error) {
 
 	return result, nil
 }
-

@@ -21,7 +21,7 @@ var (
 	MaxY int
 
 	CurrentYear = time.Now().Year()
-    Terminal = terminal.TerminalNew()
+	Terminal    = terminal.TerminalNew()
 
 	AllBonds = bonds.BondsNew()
 )
@@ -35,7 +35,7 @@ const (
 	SaveBondsKey    = 's'
 	LoadBondsKey    = 'l'
 
-    DefaultDateLayout = "02.01.2006"
+	DefaultDateLayout = "02.01.2006"
 )
 
 func PrintSimpleDate(obj time.Time) {
@@ -209,7 +209,7 @@ func main() {
 	}
 
 	defer main.Delete()
-	infoHeight, infoWidth := MaxY / 2, (MaxX/3)*1
+	infoHeight, infoWidth := MaxY/2, (MaxX/3)*1
 	infoPosY, infoPosX := 0, (MaxX/3)*2
 	info, err := goncurses.NewWindow(infoHeight, infoWidth, infoPosY, infoPosX)
 
@@ -217,22 +217,22 @@ func main() {
 		panic(err)
 	}
 
-    err = Terminal.Init(terminal.TerminalSettings{
-        Title: "|Terminal|",
-        SizeY: infoHeight - 1,
-        SizeX: infoWidth,
-        PosX: infoPosX,
-        PosY: infoHeight,
-        DefaultEcho: false,
-        DefaultCursor: 0,
-    })
+	err = Terminal.Init(terminal.TerminalSettings{
+		Title:         "|Terminal|",
+		SizeY:         infoHeight - 1,
+		SizeX:         infoWidth,
+		PosX:          infoPosX,
+		PosY:          infoHeight,
+		DefaultEcho:   false,
+		DefaultCursor: 0,
+	})
 
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 
-    defer Terminal.Delete()
-    Terminal.Print("Inited successfully")
+	defer Terminal.Delete()
+	Terminal.Print("Inited successfully")
 
 	var year int = CurrentYear
 	var graphOffsetX int = (mainWidth - 6) / 12
@@ -249,7 +249,7 @@ func main() {
 		switch input {
 		case ExitKey:
 			{
-                tmp := Terminal.AskChar("Really exit?[y/n]")
+				tmp := Terminal.AskChar("Really exit?[y/n]")
 
 				if tmp == 'y' || tmp == 'Y' {
 					loop = false
@@ -275,7 +275,7 @@ func main() {
 				data, err := CreateBondsByUser()
 
 				if err != nil {
-                    Terminal.Print(err.Error())
+					Terminal.Print(err.Error())
 
 				} else {
 					AllBonds.Append(data)
@@ -284,39 +284,39 @@ func main() {
 			}
 
 		case SaveBondsKey:
-            {
-                msg := "Filename for save: "
-                filename, err := Terminal.AskString(msg)
+			{
+				msg := "Filename for save: "
+				filename, err := Terminal.AskString(msg)
 
-                if err != nil {
-                    Terminal.Print(err.Error())
-                    continue
-                }
+				if err != nil {
+					Terminal.Print(err.Error())
+					continue
+				}
 
-                err = AllBonds.SaveToFile(filename)
+				err = AllBonds.SaveToFile(filename)
 
-                if err != nil {
-                    Terminal.Print(err.Error())
-                }
-            }
+				if err != nil {
+					Terminal.Print(err.Error())
+				}
+			}
 
-        case LoadBondsKey:
-            {
-                msg := "Filename for load: "
-                filename, err := Terminal.AskString(msg)
+		case LoadBondsKey:
+			{
+				msg := "Filename for load: "
+				filename, err := Terminal.AskString(msg)
 
-                if err != nil {
-                    Terminal.Print(err.Error())
-                    continue
-                }
+				if err != nil {
+					Terminal.Print(err.Error())
+					continue
+				}
 
-                err = AllBonds.LoadFromFile(filename)
+				err = AllBonds.LoadFromFile(filename)
 
-                if err != nil {
-                    Terminal.Print(err.Error())
-                }
+				if err != nil {
+					Terminal.Print(err.Error())
+				}
 
-            }
+			}
 		}
 
 		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
@@ -330,7 +330,7 @@ func main() {
 		stdscr.Refresh()
 		main.Refresh()
 		info.Refresh()
-        Terminal.Refresh()
+		Terminal.Refresh()
 
 		input = stdscr.GetChar()
 	}
