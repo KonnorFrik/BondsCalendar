@@ -59,23 +59,23 @@ Create new window and show given strings as list with indices
 Have own input processing
 */
 func PopUpScrollableList(data []string, title string, sizeY, posY, posX int) error {
-    // TODO: 
-    // pass MaxX MaxY of main window and spawn new subwindow with list at center
-    if title == "" {
-        title = "|List|"
-    }
+	// TODO:
+	// pass MaxX MaxY of main window and spawn new subwindow with list at center
+	if title == "" {
+		title = "|List|"
+	}
 
-    var sizeX int = len(title) + 2
+	var sizeX int = len(title) + 2
 
-    for _, str := range data {
-        sizeX = max(sizeX, len(str) + 2)
-    }
+	for _, str := range data {
+		sizeX = max(sizeX, len(str)+2)
+	}
 
-    win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
+	win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
 	var startInd int = 0
 
@@ -101,12 +101,12 @@ func PopUpScrollableList(data []string, title string, sizeY, posY, posX int) err
 		return startInd
 	}
 
-    var input goncurses.Key
+	var input goncurses.Key
 
-    for input != ExitKey {
+	for input != ExitKey {
 		win.Clear()
 		win.Box(0, 0)
-		win.MovePrint(0, sizeX/2-(len(title) / 2), title)
+		win.MovePrint(0, sizeX/2-(len(title)/2), title)
 		win.Refresh()
 
 		switch input {
@@ -119,9 +119,9 @@ func PopUpScrollableList(data []string, title string, sizeY, posY, posX int) err
 
 		startInd = printSlice(startInd)
 		input = win.GetChar()
-    }
+	}
 
-    return nil
+	return nil
 }
 
 /* Remove element from slice by it's index */
@@ -130,9 +130,9 @@ func SliceRemoveByIndex[T any](slc []T, index int) ([]T, error) {
 		return slc, fmt.Errorf("Index: %d out of slice bounds with len: %d\n", index, len(slc))
 	}
 
-    // if len(slc) == 0 {
-    //
-    // }
+	// if len(slc) == 0 {
+	//
+	// }
 
 	return append(slc[:index], slc[index+1:]...), nil
 }

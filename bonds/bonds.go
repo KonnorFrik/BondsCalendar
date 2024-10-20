@@ -8,11 +8,11 @@ import (
 
 /* Struct for describe one bonds */
 type BondsData struct {
-	Name              string        `json:"name"` // Bond name
-	CouponCount       int           `json:"couponCount"` // Count of remaining coupon payments
-	CouponPeriod      int           `json:"couponPeriod"` // Period between coupon payments (Calc as NextDate - NearDate)
-	CouponNearPayDate time.Time     `json:"nearPayDate"` // Near date of payment
-	PayDates          []time.Time   `json:"-"` // Calculated dates of coupon payments
+	Name              string      `json:"name"`         // Bond name
+	CouponCount       int         `json:"couponCount"`  // Count of remaining coupon payments
+	CouponPeriod      int         `json:"couponPeriod"` // Period between coupon payments (Calc as NextDate - NearDate)
+	CouponNearPayDate time.Time   `json:"nearPayDate"`  // Near date of payment
+	PayDates          []time.Time `json:"-"`            // Calculated dates of coupon payments
 }
 
 /* Struct for store multiply bonds */
@@ -128,26 +128,26 @@ func CouponPeriodCreate(nearest, next time.Time) int {
 
 /*
 Caclulate all related data:
-    - Next coupon pay dates
-    - Remove dates if they are in the past (date < time.Now)
+  - Next coupon pay dates
+  - Remove dates if they are in the past (date < time.Now)
 */
 func (self *BondsData) CalcAll() {
-    self.calcCouponDates()
-    self.removePastDates()
+	self.calcCouponDates()
+	self.removePastDates()
 }
 
 /* Check is near pay date is in the past and set near as next, if next available */
 func (self *BondsData) removePastDates() {
-    timeNow := time.Now()
+	timeNow := time.Now()
 
-    for id, val := range self.PayDates {
-        if val.After(timeNow) {
-            self.PayDates = self.PayDates[id:]
-            self.CouponNearPayDate = self.PayDates[0]
-            self.CouponCount -= id
-            break
-        }
-    }
+	for id, val := range self.PayDates {
+		if val.After(timeNow) {
+			self.PayDates = self.PayDates[id:]
+			self.CouponNearPayDate = self.PayDates[0]
+			self.CouponCount -= id
+			break
+		}
+	}
 }
 
 /* Calculate all next pay dates */
@@ -160,4 +160,3 @@ func (self *BondsData) calcCouponDates() {
 		tmp = tmp.AddDate(0, 0, self.CouponPeriod)
 	}
 }
-
