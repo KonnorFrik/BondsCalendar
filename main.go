@@ -22,8 +22,7 @@ var (
 
 	CurrentYear = time.Now().Year()
 	Terminal    = terminal.TerminalNew()
-
-	AllBonds = bonds.BondsNew()
+	AllBonds    = bonds.BondsNew()
 )
 
 const (
