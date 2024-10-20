@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	// "os"
 	"bonds_payment_calendar/bonds"
 	"bonds_payment_calendar/terminal"
@@ -16,6 +20,25 @@ type YearInfo struct {
 	PaymentCount int
 }
 
+/*
+Terminal command signature:
+    [COMMAND] [OPTIONAL ARGUMENTS]...
+    COMMAND:
+        always string
+    OPTIONAL ARGUMENTS:
+        always string
+    Each command convert arguments to type what they need
+    Each command processing function return (error)
+    Each command processing function recieve a slice of string (arguments without command)
+    Each command processing function have fixed signature
+*/
+
+type CommandProcessing func([]string) error
+type Command struct {
+    Info string
+    Executor CommandProcessing
+}
+
 var (
 	MaxX int
 	MaxY int
@@ -24,6 +47,8 @@ var (
 	Terminal    = terminal.TerminalNew()
 
 	AllBonds = bonds.BondsNew()
+
+    CommandTable = make(map[string]Command)
 )
 
 const (
@@ -37,26 +62,96 @@ const (
 	ListBondsKey    = 'v'
 	ScrollUpKey     = 'w'
 	ScrollDownKey   = 's'
+    StartOfCommandKey = ':'
 
 	DefaultDateLayout = "02.01.2006"
 )
 
-func PrintSimpleDate(obj time.Time) {
-	fmt.Printf("%02d.%02d.%d\n", obj.Day(), obj.Month(), obj.Year())
+/* Return error if command not exist in CommandTable, nil otherwise */
+func IsCommandExist(command string) error {
+    var err error
+    _, exist := CommandTable[command]
+
+    if !exist {
+        err = fmt.Errorf("Unknown command: '%s'", command)
+    }
+
+    return err
 }
 
+/* Search for command executor and call it, print error in terminal for any errors occured */
+func ExecuteCommand(input string) {
+    splitted := strings.Split(input, " ")
+
+    if len(splitted) == 0 {
+        return
+    }
+
+    err := IsCommandExist(splitted[0])
+
+    if err != nil {
+        Terminal.Print(err.Error())
+        return
+    }
+
+    commandStruct, _ := CommandTable[splitted[0]]
+
+    err = commandStruct.Executor(splitted[1:])
+
+    if err != nil {
+        Terminal.Print(err.Error())
+    }
+}
+
+func CommandExit(args []string) error {
+    var arg int
+    var err error
+
+    if len(args) >= 1 {
+        arg, err = strconv.Atoi(args[0])
+
+        if err != nil {
+            return err
+        }
+    }
+
+    os.Exit(arg)
+
+    return err
+}
+
+func CommandHelp(args []string) error {
+    var err error
+
+    if len(args) == 0 {
+        Terminal.Print("Usage: help <command> - Show info about command")
+        return err
+    }
+
+    err = IsCommandExist(args[0])
+
+    if err != nil {
+        return err
+    }
+
+    commandStruct, _ := CommandTable[args[0]]
+    Terminal.Print("\t" + args[0])
+    Terminal.Print(commandStruct.Info)
+
+    return err
+}
+
+/* Draw a window with own input processing */
 func HelpWindow() {
 	startY, startX := MaxY/4, MaxX/4
 	height, width := MaxY/2, MaxX/2
 	scr, err := goncurses.NewWindow(height, width, startY, startX)
 
 	if err != nil {
-		// fmt.Fprint(os.Stderr, "Can't create Help window:", err)
 		panic(err)
 	}
 
 	defer scr.Delete()
-
 	var input goncurses.Key
 
 	for input != ExitKey {
@@ -103,6 +198,7 @@ func HelpWindow() {
 	}
 }
 
+/* Draw graph of payments for given year */
 func DrawGraphByYear(obj *bonds.Bonds, year int, win *goncurses.Window, sizeX, sizeY, offsetX int) YearInfo {
 	result := YearInfo{
 		Year:         year,
@@ -121,13 +217,13 @@ func DrawGraphByYear(obj *bonds.Bonds, year int, win *goncurses.Window, sizeX, s
 		payCount := obj.PayCountByYearMonth(year, m)
 		result.PaymentCount += payCount
 		win.MovePrintf(countY, x, "%2d", payCount)
-
 		var graphY int = countY - 1
+
 		for count := 0; count < payCount; count++ {
 			win.MovePrint(graphY, x+1, "+")
 			graphY--
 
-			if graphY <= 0 {
+			if graphY < 1 {
 				break
 			}
 		}
@@ -139,16 +235,17 @@ func DrawGraphByYear(obj *bonds.Bonds, year int, win *goncurses.Window, sizeX, s
 	return result
 }
 
+/* Draw info about payments for given year */
 func DrawInfoByYear(win *goncurses.Window, sizeX, sizeY int, yearInfo YearInfo) {
 	var y int = 1
 	win.MovePrint(0, sizeX/2-2, "|Info|")
-
 	win.MovePrintf(y, sizeX/3, "Year: %d", yearInfo.Year)
 	y++
 	win.MovePrintf(y, 1, "Payments count: %d", yearInfo.PaymentCount)
 	y++
 }
 
+/* Draw a list of all bonds in own window, with own input processing */
 func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
 	win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
 
@@ -158,7 +255,6 @@ func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
 	}
 
 	defer win.Delete()
-	// win.ScrollOk(true)
 	bondsTable := make([]string, 0, len(bondsArr.Bonds))
 
 	for id, obj := range bondsArr.Bonds {
@@ -211,6 +307,7 @@ func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
 	}
 }
 
+/* Ask user for bonds params and create new one */
 func CreateBondsByUser() (*bonds.BondsData, error) {
 	Terminal.Print("***Bonds Create***")
 	question := "Name: "
@@ -324,12 +421,9 @@ func main() {
 	}
 
 	defer Terminal.Delete()
-	Terminal.Print("Inited successfully")
-
+    Terminal.Print("Inited successfully. Type ':help' for info")
 	var year int = CurrentYear
 	var graphOffsetX int = (mainWidth - 6) / 12
-	// fmt.Fprintf(os.Stderr, "graphOffsetX: %d\n", graphOffsetX)
-
 	var input goncurses.Key
 	var loop bool = true
 
@@ -412,6 +506,18 @@ func main() {
 
 		case ListBondsKey:
 			DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
+
+        case StartOfCommandKey:
+            {
+                command, err := Terminal.AskString("")
+
+                if err != nil {
+                    Terminal.Print(err.Error())
+                    continue
+                }
+
+                ExecuteCommand(command)
+            }
 		}
 
 		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
@@ -428,5 +534,11 @@ func main() {
 		Terminal.Refresh()
 
 		input = stdscr.GetChar()
+
 	}
+}
+
+func init() {
+    CommandTable["exit"] = Command{"Exit from programm with terminal breaking", CommandExit}
+    CommandTable["help"] = Command{"'help <command>'-Show info about commands", CommandHelp}
 }
