@@ -56,9 +56,9 @@ func PopUpAskString(y, x int, msg string, maxInputLen int) (string, error) {
 
 /* Remove element from slice by it's index */
 func SliceRemoveByIndex[T any](slc []T, index int) ([]T, error) {
-    if index >= len(slc) {
-        return []T{}, fmt.Errorf("Index: %d out of slice bounds with len: %d\n", index, len(slc))
-    }
+	if index >= len(slc) {
+		return []T{}, fmt.Errorf("Index: %d out of slice bounds with len: %d\n", index, len(slc))
+	}
 
-    return append(slc[:index], slc[index + 1:]...), nil
+	return append(slc[:index], slc[index+1:]...), nil
 }

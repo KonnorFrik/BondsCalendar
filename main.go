@@ -27,125 +27,125 @@ var (
 )
 
 const (
-	ExitKey         = 'q'
-	HelpKey         = 'h'
-	IncreaseYearKey = '>'
-	DecreaseYearKey = '<'
-	AppendBondsKey  = 'a'
-	SaveBondsKey    = 's'
-	LoadBondsKey    = 'l'
-	ListBondsKey    = 'v'
-	ScrollUpKey     = 'w'
-	ScrollDownKey   = 's'
-    StartOfCommandKey = ':'
+	ExitKey           = 'q'
+	HelpKey           = 'h'
+	IncreaseYearKey   = '>'
+	DecreaseYearKey   = '<'
+	AppendBondsKey    = 'a'
+	SaveBondsKey      = 's'
+	LoadBondsKey      = 'l'
+	ListBondsKey      = 'v'
+	ScrollUpKey       = 'w'
+	ScrollDownKey     = 's'
+	StartOfCommandKey = ':'
 
 	DefaultDateLayout = "02.01.2006"
 )
 
 func CommandHelp(args []string) error {
-    if len(args) == 0 {
-        helpCommand, _ := CommandTable["help"]
-        Terminal.Print(helpCommand.Info)
-        return nil
-    }
+	if len(args) == 0 {
+		helpCommand, _ := CommandTable["help"]
+		Terminal.Print(helpCommand.Info)
+		return nil
+	}
 
-    err := IsCommandExist(args[0])
+	err := IsCommandExist(args[0])
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    commandStruct, _ := CommandTable[args[0]]
-    Terminal.Print("\t" + args[0])
-    Terminal.Print(commandStruct.Info)
+	commandStruct, _ := CommandTable[args[0]]
+	Terminal.Print("\t" + args[0])
+	Terminal.Print(commandStruct.Info)
 
-    return err
+	return err
 }
 
 func CommandList(args []string) error {
-    DrawListBonds(AllBonds, MaxY - 1, MaxX / 3 * 2, 0, 0)
-    return nil
+	DrawListBonds(AllBonds, MaxY-1, MaxX/3*2, 0, 0)
+	return nil
 }
 
 func CommandLoad(args []string) error {
-    var filename string
+	var filename string
 
-    if len(args) == 0 {
-        input, err := Terminal.AskString("Filename for load:")
+	if len(args) == 0 {
+		input, err := Terminal.AskString("Filename for load:")
 
-        if err != nil {
-            return err
-        }
+		if err != nil {
+			return err
+		}
 
-        filename = input
+		filename = input
 
-    } else {
-        filename = args[0]
-    }
+	} else {
+		filename = args[0]
+	}
 
-    err := AllBonds.LoadFromFile(filename)
+	err := AllBonds.LoadFromFile(filename)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    Terminal.Print(fmt.Sprintf("Loaded: %d bonds", len(AllBonds.Bonds)))
+	Terminal.Print(fmt.Sprintf("Loaded: %d bonds", len(AllBonds.Bonds)))
 
-    return err
+	return err
 }
 
 func CommandSave(args []string) error {
-    var filename string
+	var filename string
 
-    if len(args) == 0 {
-        input, err := Terminal.AskString("Filename for save:")
+	if len(args) == 0 {
+		input, err := Terminal.AskString("Filename for save:")
 
-        if err != nil {
-            return err
-        }
+		if err != nil {
+			return err
+		}
 
-        filename = input
+		filename = input
 
-    } else {
-        filename = args[0]
-    }
+	} else {
+		filename = args[0]
+	}
 
-    err := AllBonds.SaveToFile(filename)
+	err := AllBonds.SaveToFile(filename)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    Terminal.Print(fmt.Sprintf("Saved: %d bonds", len(AllBonds.Bonds)))
+	Terminal.Print(fmt.Sprintf("Saved: %d bonds", len(AllBonds.Bonds)))
 
-    return err
+	return err
 }
 
 func CommandDelete(args []string) error {
-    var index int
-    var err error
+	var index int
+	var err error
 
-    if len(args) == 0 {
-        tmp, err := Terminal.AskInt("Index for delete:")
+	if len(args) == 0 {
+		tmp, err := Terminal.AskInt("Index for delete:")
 
-        if err != nil {
-            return err
-        }
+		if err != nil {
+			return err
+		}
 
-        index = tmp
+		index = tmp
 
-    } else {
-        tmp, err := strconv.Atoi(args[0])
+	} else {
+		tmp, err := strconv.Atoi(args[0])
 
-        if err != nil {
-            return err
-        }
+		if err != nil {
+			return err
+		}
 
-        index = tmp
-    }
+		index = tmp
+	}
 
-    AllBonds.Bonds, err = SliceRemoveByIndex(AllBonds.Bonds, index)
-    return err
+	AllBonds.Bonds, err = SliceRemoveByIndex(AllBonds.Bonds, index)
+	return err
 }
 
 /* Draw a window with own input processing */
@@ -360,7 +360,7 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // TODO:
 // [ ] add more info in BoundsData
 // [x] by key show list of all bonds in window (format: "index | Name | ...")
-// [ ]      add command 'delete <index>' 
+// [ ]      add command 'delete <index>'
 
 // TODO:
 // [ ] Create a small system for hold windows data/functions and call them
@@ -423,7 +423,7 @@ func main() {
 	}
 
 	defer Terminal.Delete()
-    Terminal.Print("Inited successfully. Type ':help' for info")
+	Terminal.Print("Inited successfully. Type ':help' for info")
 	var year int = CurrentYear
 	var graphOffsetX int = (mainWidth - 6) / 12
 	var input goncurses.Key
@@ -509,17 +509,17 @@ func main() {
 		case ListBondsKey:
 			DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
 
-        case StartOfCommandKey:
-            {
-                command, err := Terminal.AskString("")
+		case StartOfCommandKey:
+			{
+				command, err := Terminal.AskString("")
 
-                if err != nil {
-                    Terminal.Print(err.Error())
-                    continue
-                }
+				if err != nil {
+					Terminal.Print(err.Error())
+					continue
+				}
 
-                ExecuteCommand(command)
-            }
+				ExecuteCommand(command)
+			}
 		}
 
 		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
@@ -541,9 +541,9 @@ func main() {
 }
 
 func init() {
-    RegisterCommand("help", Command{"':help <command>'-Show info about commands", CommandHelp})
-    RegisterCommand("list", Command{"Show list of all bonds", CommandList})
-    RegisterCommand("save", Command{"'save <file>' - Save bonds info into file", CommandSave})
-    RegisterCommand("load", Command{"'load <file>' - Load bonds info from file", CommandLoad})
-    RegisterCommand("delete", Command{"'delete <index>' - Delete bonds info from list", CommandDelete})
+	RegisterCommand("help", Command{"':help <command>'-Show info about commands", CommandHelp})
+	RegisterCommand("list", Command{"Show list of all bonds", CommandList})
+	RegisterCommand("save", Command{"'save <file>' - Save bonds info into file", CommandSave})
+	RegisterCommand("load", Command{"'load <file>' - Load bonds info from file", CommandLoad})
+	RegisterCommand("delete", Command{"'delete <index>' - Delete bonds info from list", CommandDelete})
 }
