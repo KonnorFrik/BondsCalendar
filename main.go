@@ -30,10 +30,6 @@ const (
 	HelpKey           = 'h'
 	IncreaseYearKey   = '>'
 	DecreaseYearKey   = '<'
-	// AppendBondsKey    = 'a'
-	// SaveBondsKey      = 's'
-	// LoadBondsKey      = 'l'
-	// ListBondsKey      = 'v'
 	ScrollUpKey       = 'w'
 	ScrollDownKey     = 's'
 	StartOfCommandKey = ':'
@@ -298,12 +294,6 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 
 // TODO:
 // [ ] add more info in BoundsData
-
-// TODO:
-// [ ] create different windows
-//     [x] for graph
-//     [1/2] for info by year
-//       + payments count
 
 // TODO:
 // [1/2] by key save bonds data in json in default path
