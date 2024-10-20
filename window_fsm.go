@@ -36,6 +36,10 @@ func FSMWindowNew(sizeY, sizeX, posY, posX int) (*FSMWindow, error) {
 
     obj.nextWindow = make(map[goncurses.Key]*FSMWindow)
     obj.specialInput = make(map[goncurses.Key]SpecialInputFunc)
+    obj.SizeX = sizeX
+    obj.SizeY = sizeY
+    obj.posX = posX
+    obj.PosY = posY
 
     return obj, nil
 }
@@ -44,33 +48,39 @@ func (self *FSMWindow) FreeWindow() {
     self.Window.Delete()
 }
 
-func (self *FSMWindow) SetTitle(title string) {
+func (self *FSMWindow) SetTitle(title string) *FSMWindow {
     self.Title = title
+    return self
 }
 
-func (self *FSMWindow) SetCustomDraw(function CustomDraw) {
+func (self *FSMWindow) SetCustomDraw(function CustomDraw) *FSMWindow {
     self.drawFunc = function
+    return self
 }
 
-func (self *FSMWindow) RegisterNextWindow(key goncurses.Key, window *FSMWindow) {
+func (self *FSMWindow) RegisterNextWindow(key goncurses.Key, window *FSMWindow) *FSMWindow {
     self.nextWindow[key] = window
+    return self
 }
 
-func (self *FSMWindow) RegisterInput(key goncurses.Key, function SpecialInputFunc) {
+func (self *FSMWindow) RegisterInput(key goncurses.Key, function SpecialInputFunc) *FSMWindow {
     self.specialInput[key] = function
+    return self
 }
 
 /* Call clear and then custom draw function. Call Draw before DrawBox */
-func (self *FSMWindow) Draw() {
+func (self *FSMWindow) Draw() *FSMWindow {
     self.Window.Clear()
 
     if self.drawFunc != nil {
         self.drawFunc()
     }
+
+    return self
 }
 
 /* Draw box and title if setted */
-func (self *FSMWindow) DrawBox() {
+func (self *FSMWindow) DrawBox() *FSMWindow {
     self.Window.Box(0, 0)
 
     if self.Title != "" {
@@ -78,6 +88,7 @@ func (self *FSMWindow) DrawBox() {
     }
 
     self.Window.Refresh()
+    return self
 }
 
 /*
@@ -101,5 +112,5 @@ func (self *FSMWindow) Input() (*FSMWindow, bool) {
         status = inputFunc()
     }
 
-    return nil, status
+    return self, status
 }
