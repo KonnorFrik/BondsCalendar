@@ -1,3 +1,7 @@
+/*
+Some rules:
+    Custom input processing functions for FSMWindow must return true for continue work and false for exit
+*/
 package main
 
 import (
@@ -423,14 +427,7 @@ func main() {
 		focus.DrawBox()
 		info.Refresh()
 
-		var isWork bool
-		focus, isWork = focus.Input()
-
-		if !isWork {
-			loop = false
-			continue
-		}
-
+		focus, loop = focus.Input()
 	}
 }
 

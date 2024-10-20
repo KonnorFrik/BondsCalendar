@@ -1,3 +1,6 @@
+/*
+File for separate a commands
+*/
 package main
 
 import (
@@ -7,8 +10,8 @@ import (
 
 type CommandProcessing func([]string) error
 type Command struct {
-	Info     string
-	Executor CommandProcessing
+	Info     string // Help message for command
+	Executor CommandProcessing // func for execute command
 }
 
 var (

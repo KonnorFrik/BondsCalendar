@@ -31,9 +31,12 @@ func BondsNew() *Bonds {
 	return obj
 }
 
-/* Save all appended bonds into file as json */
+/*
+Save all appended bonds into file as json
+Overwrite file if it exist
+*/
 func (self *Bonds) SaveToFile(filename string) error {
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 
 	if err != nil {
 		return err
@@ -79,7 +82,7 @@ func (self *Bonds) LoadFromFile(filename string) error {
 	return nil
 }
 
-/* Append new bonds, also call CalcCouponDates before append */
+/* Append new bonds, also call CalcAll for bond before append */
 func (self *Bonds) Append(obj *BondsData) {
 	obj.CalcAll()
 	self.Bonds = append(self.Bonds, obj)
@@ -102,8 +105,8 @@ func (self *Bonds) PayCountByYearMonth(year, month int) int {
 }
 
 /*
-Check is any bond has been expired:
-    - Near pay date is in the past and coupon count is 1
+Check is any bond has been expired and return their indices:
+    - len of any bonds PayDates is zero
 */
 // func (self *Bonds) ExpiredList() []int {
 //
@@ -115,13 +118,13 @@ func BondsDataNew() *BondsData {
 	return obj
 }
 
-/** Create a pay day date with only year, month and day */
+/** Create a payday date with only year, month and day */
 func CouponPayDay(year, month, day int) time.Time {
 	obj := time.Date(year, time.Month(month), day, 0, 0, 0, 0, DefaultLocation)
 	return obj
 }
 
-/* Create a payment duration with 2 next pay dates (near and next one) */
+/* Create a payment perion in days with 2 next pay dates (near and next one) */
 func CouponPeriodCreate(nearest, next time.Time) int {
 	return int(next.Sub(nearest).Hours()) / 24
 }

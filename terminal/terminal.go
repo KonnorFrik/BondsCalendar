@@ -2,7 +2,6 @@
 Wrap for ncurses Window
 Always boxes
 Features:
-
 	print strings in terminal window
 	get inputs from user with converting
 */
@@ -76,6 +75,7 @@ func (self *Terminal) Delete() *Terminal {
 	return self
 }
 
+/* Draw box, title and refresh changes */
 func (self *Terminal) Refresh() {
 	self.Window.Box(0, 0)
 	self.Window.MovePrint(0, self.Settings.SizeX/2-5, self.Settings.Title)
@@ -95,14 +95,15 @@ func (self *Terminal) Clear() error {
 		return err
 	}
 
-	err = self.Window.Box(0, 0)
-	self.Window.Refresh()
+	// err = self.Window.Box(0, 0)
+	// self.Window.Refresh()
+    self.Refresh()
 
 	return err
 }
 
 /*
-Print given msg to terminal. Split msg if len(msg) > sizeX
+Print given msg to terminal. Split msg if it can't fit in one terminal line (Terminal.SizeX)
 */
 func (self *Terminal) Print(msg string) *Terminal {
 	if len(msg) >= (self.Settings.SizeX - 2) {
@@ -128,7 +129,10 @@ func (self *Terminal) Print(msg string) *Terminal {
 	return self
 }
 
-/* Show message and ask for input string */
+/*
+Show message and ask for input string.
+Function return after a pressing 'enter'
+*/
 func (self *Terminal) AskString(question string) (string, error) {
 	goncurses.Echo(true)
 	goncurses.Cursor(1)
@@ -141,7 +145,10 @@ func (self *Terminal) AskString(question string) (string, error) {
 	return result, err
 }
 
-/* Show message and ask for input char */
+/*
+Show message and ask for input char.
+Function return after a pressin any key
+*/
 func (self *Terminal) AskChar(question string) goncurses.Key {
 	goncurses.Echo(true)
 	goncurses.Cursor(1)
@@ -154,7 +161,10 @@ func (self *Terminal) AskChar(question string) goncurses.Key {
 	return result
 }
 
-/* Show message, ask input string and convert it to int */
+/*
+Show message, ask input string and convert it to int.
+Function return after a pressing 'enter'
+*/
 func (self *Terminal) AskInt(question string) (int, error) {
 	var result int
 	goncurses.Echo(true)
@@ -172,7 +182,10 @@ func (self *Terminal) AskInt(question string) (int, error) {
 	return result, err
 }
 
-/* Show message, ask input string and convert it to time.Time */
+/*
+Show message, ask input string and convert it to time.Time.
+Function return after a pressing 'enter'
+*/
 func (self *Terminal) AskDate(question, layout string) (time.Time, error) {
 	var result time.Time
 	goncurses.Echo(true)
@@ -190,6 +203,7 @@ func (self *Terminal) AskDate(question, layout string) (time.Time, error) {
 	return result, err
 }
 
+/* Help function - scroll terminal window and print only one line, which must fit in */
 func (self *Terminal) printScrolled(oneLineMsg string) {
 	// Clear input field from HLine option 1
 	// self.Window.Move(self.Settings.SizeY - 1, 0)
@@ -204,6 +218,7 @@ func (self *Terminal) printScrolled(oneLineMsg string) {
 	self.Window.ClearToEOL()
 }
 
+/* Help function - Correctly process a scrolling, printing a request prompt, and get string from user */
 func (self *Terminal) askInput(question string) (string, error) {
 	self.printScrolled(question)
 	self.Refresh()
@@ -213,6 +228,7 @@ func (self *Terminal) askInput(question string) (string, error) {
 	return result, err
 }
 
+/* Help function - Correctly process a scrolling, printing a request prompt, and get pressed key from user */
 func (self *Terminal) askChar(question string) goncurses.Key {
 	self.printScrolled(question)
 	self.Refresh()

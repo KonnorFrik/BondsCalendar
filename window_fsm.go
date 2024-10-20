@@ -1,15 +1,22 @@
+/*
+A wrap for ncurses window
+Register function:
+    CustomDraw - for draw anything
+    SpecialInputFunc - function binds with key, for processing this input key
+Register a next windows:
+    Same struct *FSMWindow binds with ncurses key. When you call FSMWindow.Input() you will recieve same *FSMWindow or next if pressed a special key for switch them
+
+Recomended order of functions:
+    .Draw() - for clear and draw your data
+    .DrawBox() - for draw a box and title and refresh window
+    .Input() - can block if ncurses.timeout not setted
+        Also return a bool from SpecialInputFunc, which you can use as you want
+*/
 package main
 
 import (
 	"github.com/gbin/goncurses"
 )
-
-/*
-Register key with window to return
-Register key for special input processing
-Own input processing func related to window
-Own drawing func
-*/
 
 type SpecialInputFunc func() bool // Custom func for process input, returning false mean stop to work and exit
 type CustomDraw func()            // Custom func from draw anything
@@ -63,10 +70,12 @@ func (self *FSMWindow) RegisterNextWindow(key goncurses.Key, window *FSMWindow) 
 	return self
 }
 
+/* Bind a ncurses key with function for processing this key while press it */
 func (self *FSMWindow) RegisterInput(key goncurses.Key, function SpecialInputFunc) *FSMWindow {
 	self.specialInput[key] = function
 	return self
 }
+
 
 /* Call clear and then custom draw function. Call Draw before DrawBox */
 func (self *FSMWindow) Draw() *FSMWindow {
@@ -91,10 +100,11 @@ func (self *FSMWindow) DrawBox() *FSMWindow {
 	return self
 }
 
+// TODO:
+// change bool to int
+
 /*
-Return next window or nil and status if this fsm window can continue work
-true - Yes, can
-false - No
+Return next window or same and bool status from custom input-proccessing function
 */
 func (self *FSMWindow) Input() (*FSMWindow, bool) {
 	inputKey := self.Window.GetChar()
