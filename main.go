@@ -300,6 +300,9 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // [ ] Create way to init default path and save into it
 //      for now - ask for path and save into it
 
+// TODO:
+// new command 'dates <index>' - show all pay dates for bonds
+
 func main() {
 	var year int = CurrentYear
 
