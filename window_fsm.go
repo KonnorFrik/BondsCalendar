@@ -11,7 +11,8 @@ Own input processing func related to window
 Own drawing func
 */
 
-type SpecialInputFunc func()
+type SpecialInputFunc func() bool // Custom func for process input, returning false mean stop to work and exit
+type CustomDraw func()  // Custom func from draw anything
 
 type FSMWindow struct {
     Window *goncurses.Window
@@ -19,6 +20,7 @@ type FSMWindow struct {
     PosY, posX int
     Title string
 
+    drawFunc CustomDraw
     nextWindow map[goncurses.Key]*FSMWindow
     specialInput map[goncurses.Key]SpecialInputFunc
 }
@@ -38,15 +40,66 @@ func FSMWindowNew(sizeY, sizeX, posY, posX int) (*FSMWindow, error) {
     return obj, nil
 }
 
+func (self *FSMWindow) FreeWindow() {
+    self.Window.Delete()
+}
+
 func (self *FSMWindow) SetTitle(title string) {
     self.Title = title
 }
 
-func (self *FSMWindow) DrawBox() {
+func (self *FSMWindow) SetCustomDraw(function CustomDraw) {
+    self.drawFunc = function
+}
+
+func (self *FSMWindow) RegisterNextWindow(key goncurses.Key, window *FSMWindow) {
+    self.nextWindow[key] = window
+}
+
+func (self *FSMWindow) RegisterInput(key goncurses.Key, function SpecialInputFunc) {
+    self.specialInput[key] = function
+}
+
+/* Call clear and then custom draw function. Call Draw before DrawBox */
+func (self *FSMWindow) Draw() {
     self.Window.Clear()
+
+    if self.drawFunc != nil {
+        self.drawFunc()
+    }
+}
+
+/* Draw box and title if setted */
+func (self *FSMWindow) DrawBox() {
     self.Window.Box(0, 0)
 
     if self.Title != "" {
         self.Window.MovePrint(0, self.SizeX / 2 - (len(self.Title) / 2), self.Title)
     }
+
+    self.Window.Refresh()
+}
+
+/*
+Return next window or nil and status if this fsm window can continue work 
+true - Yes, can
+false - No
+*/
+func (self *FSMWindow) Input() (*FSMWindow, bool) {
+    inputKey := self.Window.GetChar()
+    var status bool = true
+    nextWin, exist := self.nextWindow[inputKey]
+
+    if exist {
+        self.Window.Clear()
+        return nextWin, status
+    }
+
+    inputFunc, exist := self.specialInput[inputKey]
+
+    if exist {
+        status = inputFunc()
+    }
+
+    return nil, status
 }

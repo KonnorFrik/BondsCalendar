@@ -380,6 +380,8 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 //      for now - ask for path and save into it
 
 func main() {
+	var year int = CurrentYear
+
 	stdscr, err := goncurses.Init()
 	goncurses.Echo(false)
 	goncurses.Cursor(0)
@@ -390,15 +392,58 @@ func main() {
 
 	defer goncurses.End()
 	MaxY, MaxX = goncurses.StdScr().MaxYX()
+
 	mainHeight, mainWidth := MaxY-1, (MaxX/3)*2
 	mainPosY, mainPosX := 0, 0
-	main, err := goncurses.NewWindow(mainHeight, mainWidth, mainPosY, mainPosX)
+    main, err := FSMWindowNew(mainHeight, mainWidth, mainPosY, mainPosX)
 
 	if err != nil {
 		panic(err)
 	}
 
-	defer main.Delete()
+	defer main.FreeWindow()
+	var graphOffsetX int = (mainWidth - 6) / 12
+    var focus *FSMWindow = main
+    main.SetTitle("|Main|")
+    main.RegisterInput(IncreaseYearKey, func() bool {
+        year++
+        return true
+    })
+    main.RegisterInput(DecreaseYearKey, func() bool {
+        year--
+
+        if year < CurrentYear {
+            year = CurrentYear
+        }
+        
+        return true
+    })
+    main.RegisterInput(ExitKey, func() bool {
+        tmp := Terminal.AskChar("Really exit?[y/n]")
+
+        if tmp == 'y' || tmp == 'Y' {
+            return false
+        }
+
+        return true
+    })
+    main.RegisterInput(StartOfCommandKey, func() bool {
+        command, err := Terminal.AskString("")
+
+        if err != nil {
+            Terminal.Print(err.Error())
+            return true
+        }
+
+        ExecuteCommand(command)
+        return true
+    })
+
+    var yearInfoPtr *YearInfo = new(YearInfo)
+    main.SetCustomDraw(func() {
+		*yearInfoPtr = DrawGraphByYear(AllBonds, year, main.Window, MaxX, MaxY-2, graphOffsetX)
+    })
+
 	infoHeight, infoWidth := MaxY/2, (MaxX/3)*1
 	infoPosY, infoPosX := 0, (MaxX/3)*2
 	info, err := goncurses.NewWindow(infoHeight, infoWidth, infoPosY, infoPosX)
@@ -423,106 +468,108 @@ func main() {
 
 	defer Terminal.Delete()
 	Terminal.Print("Inited successfully. Type ':help' for info")
-	var year int = CurrentYear
-	var graphOffsetX int = (mainWidth - 6) / 12
-	var input goncurses.Key
+	// var input goncurses.Key
 	var loop bool = true
 
 	for loop {
-		main.Clear()
-		main.Box(0, 0)
 		info.Box(0, 0)
 
-		switch input {
-		case ExitKey:
-			{
-				tmp := Terminal.AskChar("Really exit?[y/n]")
+		// switch input {
+        // DONE
+		// case ExitKey:
+		// 	{
+		// 		tmp := Terminal.AskChar("Really exit?[y/n]")
+		//
+		// 		if tmp == 'y' || tmp == 'Y' {
+		// 			loop = false
+		// 			continue
+		// 		}
+		// 	}
+//
+		// case HelpKey:
+		// 	HelpWindow()
+//
+        // DONE
+		// case IncreaseYearKey:
+		// 	year++
+//
+        // DONE
+		// case DecreaseYearKey:
+		// 	year--
+		//
+		// 	if year < CurrentYear {
+		// 		year = CurrentYear
+		// 	}
+//
+		// case AppendBondsKey:
+		// 	{
+		// 		data, err := CreateBondsByUser()
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		//
+		// 		} else {
+		// 			AllBonds.Append(data)
+		// 		}
+		//
+		// 	}
+//
+		// case SaveBondsKey:
+		// 	{
+		// 		msg := "Filename for save: "
+		// 		filename, err := Terminal.AskString(msg)
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		// 			continue
+		// 		}
+		//
+		// 		err = AllBonds.SaveToFile(filename)
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		// 		}
+		// 	}
+//
+		// case LoadBondsKey:
+		// 	{
+		// 		msg := "Filename for load: "
+		// 		filename, err := Terminal.AskString(msg)
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		// 			continue
+		// 		}
+		//
+		// 		err = AllBonds.LoadFromFile(filename)
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		// 		}
+		//
+		// 	}
+//
+		// case ListBondsKey:
+		// 	DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
+//
+        // DONE
+		// case StartOfCommandKey:
+		// 	{
+		// 		command, err := Terminal.AskString("")
+		//
+		// 		if err != nil {
+		// 			Terminal.Print(err.Error())
+		// 			continue
+		// 		}
+		//
+		// 		ExecuteCommand(command)
+		// 	}
+		// }
 
-				if tmp == 'y' || tmp == 'Y' {
-					loop = false
-					continue
-				}
-			}
+        focus.Draw()
 
-		case HelpKey:
-			HelpWindow()
-
-		case IncreaseYearKey:
-			year++
-
-		case DecreaseYearKey:
-			year--
-
-			if year < CurrentYear {
-				year = CurrentYear
-			}
-
-		case AppendBondsKey:
-			{
-				data, err := CreateBondsByUser()
-
-				if err != nil {
-					Terminal.Print(err.Error())
-
-				} else {
-					AllBonds.Append(data)
-				}
-
-			}
-
-		case SaveBondsKey:
-			{
-				msg := "Filename for save: "
-				filename, err := Terminal.AskString(msg)
-
-				if err != nil {
-					Terminal.Print(err.Error())
-					continue
-				}
-
-				err = AllBonds.SaveToFile(filename)
-
-				if err != nil {
-					Terminal.Print(err.Error())
-				}
-			}
-
-		case LoadBondsKey:
-			{
-				msg := "Filename for load: "
-				filename, err := Terminal.AskString(msg)
-
-				if err != nil {
-					Terminal.Print(err.Error())
-					continue
-				}
-
-				err = AllBonds.LoadFromFile(filename)
-
-				if err != nil {
-					Terminal.Print(err.Error())
-				}
-
-			}
-
-		case ListBondsKey:
-			DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
-
-		case StartOfCommandKey:
-			{
-				command, err := Terminal.AskString("")
-
-				if err != nil {
-					Terminal.Print(err.Error())
-					continue
-				}
-
-				ExecuteCommand(command)
-			}
-		}
-
-		yearInfo := DrawGraphByYear(AllBonds, year, main, MaxX, MaxY-2, graphOffsetX)
-		DrawInfoByYear(info, infoWidth, infoHeight, yearInfo)
+		// yearInfo := DrawGraphByYear(AllBonds, year, main.Window, MaxX, MaxY-2, graphOffsetX)
+		DrawInfoByYear(info, infoWidth, infoHeight, *yearInfoPtr)
 
 		stdscr.MovePrintf(MaxY-1, 0, "Help:%c ", HelpKey)
 		stdscr.Printf("Exit:%c ", ExitKey)
@@ -530,11 +577,22 @@ func main() {
 		stdscr.Printf("Next year:%c ", IncreaseYearKey)
 
 		stdscr.Refresh()
-		main.Refresh()
-		info.Refresh()
 		Terminal.Refresh()
+        focus.DrawBox()
+		info.Refresh()
 
-		input = stdscr.GetChar()
+        nextWin, isWork := focus.Input()
+
+        if !isWork {
+            loop = false
+            continue
+        }
+
+        if nextWin != nil {
+            focus = nextWin
+        }
+
+		// input = stdscr.GetChar()
 
 	}
 }
