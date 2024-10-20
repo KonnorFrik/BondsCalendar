@@ -30,10 +30,10 @@ const (
 	HelpKey           = 'h'
 	IncreaseYearKey   = '>'
 	DecreaseYearKey   = '<'
-	AppendBondsKey    = 'a'
-	SaveBondsKey      = 's'
-	LoadBondsKey      = 'l'
-	ListBondsKey      = 'v'
+	// AppendBondsKey    = 'a'
+	// SaveBondsKey      = 's'
+	// LoadBondsKey      = 'l'
+	// ListBondsKey      = 'v'
 	ScrollUpKey       = 'w'
 	ScrollDownKey     = 's'
 	StartOfCommandKey = ':'
@@ -43,6 +43,14 @@ const (
 
 func CommandHelp(args []string) error {
 	if len(args) == 0 {
+        for key, val := range CommandTable {
+            if key == "help" {
+                continue
+            }
+
+            Terminal.Print(val.Info)
+        }
+
 		helpCommand, _ := CommandTable["help"]
 		Terminal.Print(helpCommand.Info)
 		return nil
@@ -62,8 +70,8 @@ func CommandHelp(args []string) error {
 }
 
 func CommandList(args []string) error {
-	DrawListBonds(AllBonds, MaxY-1, MaxX/3*2, 0, 0)
-	return nil
+    err := DrawListBonds(AllBonds, MaxY-1, 0, 0)
+	return err
 }
 
 func CommandLoad(args []string) error {
@@ -120,6 +128,18 @@ func CommandSave(args []string) error {
 	return err
 }
 
+func CommandNewBonds(args []string) error {
+    data, err := CreateBondsByUser()
+
+    if err != nil {
+        return err
+
+    } 
+
+    AllBonds.Append(data)
+    return nil
+}
+
 func CommandDelete(args []string) error {
 	var index int
 	var err error
@@ -143,68 +163,27 @@ func CommandDelete(args []string) error {
 		index = tmp
 	}
 
-	AllBonds.Bonds, err = SliceRemoveByIndex(AllBonds.Bonds, index)
+    var obj *bonds.BondsData
+    var exist bool
+
+    if index < len(AllBonds.Bonds) && index >= 0 {
+        obj = AllBonds.Bonds[index]
+        exist = true
+    }
+
+    AllBonds.Bonds, err = SliceRemoveByIndex(AllBonds.Bonds, index)
+
+    if exist && err == nil {
+        Terminal.Print(fmt.Sprintf("%d. %s - deleted", index, obj.Name))
+    }
+
 	return err
 }
 
-/* Draw a window with own input processing */
-func HelpWindow() {
-	startY, startX := MaxY/4, MaxX/4
-	height, width := MaxY/2, MaxX/2
-	scr, err := goncurses.NewWindow(height, width, startY, startX)
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer scr.Delete()
-	var input goncurses.Key
-
-	for input != ExitKey {
-		var x int = 1
-		var y int = 0
-		scr.Clear()
-		scr.Box(0, 0)
-
-		scr.MovePrint(y, width/2-2, "|Help|")
-		y++
-
-		// Info for main window
-		scr.MovePrintf(y, x, "For main programm")
-		x += 2
-		y++
-		scr.MovePrintf(y, x, "Exit key: %c", ExitKey)
-		y++
-		scr.MovePrintf(y, x, "Next year: %c", IncreaseYearKey)
-		y++
-		scr.MovePrintf(y, x, "Previous year: %c", DecreaseYearKey)
-		y++
-		scr.MovePrintf(y, x, "Append Bonds: %c", AppendBondsKey)
-		y++
-		scr.MovePrintf(y, x, "Save Bonds: %c", SaveBondsKey)
-		y++
-		scr.MovePrintf(y, x, "Load Bonds: %c", LoadBondsKey)
-		y++
-		scr.MovePrintf(y, x, "List Bonds: %c", ListBondsKey)
-		y++
-
-		// Info for bondsList
-		x = width / 3
-		y = 1
-		scr.MovePrintf(y, x, "For bonds list")
-		y++
-		x += 2
-		scr.MovePrintf(y, x, "Scroll Up: %c", ScrollUpKey)
-		y++
-		scr.MovePrintf(y, x, "Scroll Down: %c", ScrollDownKey)
-		y++
-
-		scr.Refresh()
-		input = scr.GetChar()
-	}
-}
-
-/* Draw graph of payments for given year */
+/*
+Draw graph of payments for given year 
+Called by main.Draw
+*/
 func DrawGraphByYear(obj *bonds.Bonds, year int, win *goncurses.Window, sizeX, sizeY, offsetX int) YearInfo {
 	result := YearInfo{
 		Year:         year,
@@ -241,7 +220,10 @@ func DrawGraphByYear(obj *bonds.Bonds, year int, win *goncurses.Window, sizeX, s
 	return result
 }
 
-/* Draw info about payments for given year */
+/*
+Draw info about payments for given year 
+Called by independent sub-window - info
+*/
 func DrawInfoByYear(win *goncurses.Window, sizeX, sizeY int, yearInfo YearInfo) {
 	var y int = 1
 	win.MovePrint(0, sizeX/2-2, "|Info|")
@@ -251,101 +233,59 @@ func DrawInfoByYear(win *goncurses.Window, sizeX, sizeY int, yearInfo YearInfo) 
 	y++
 }
 
-/* Draw a list of all bonds in own window, with own input processing */
-func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
-	win, err := goncurses.NewWindow(sizeY, sizeX, posY, posX)
-
-	if err != nil {
-		Terminal.Print(err.Error())
-		return
-	}
-
-	defer win.Delete()
+/* Draw a list of all bonds as scrollable pop up window */
+func DrawListBonds(bondsArr *bonds.Bonds, sizeY, posY, posX int) error {
 	bondsTable := make([]string, 0, len(bondsArr.Bonds))
+    var format string = "%d. Name:'%s' Coupon remaining:'%d', Near payday:(%02d.%02d.%d), ~PeriodDays(%d)"
 
 	for id, obj := range bondsArr.Bonds {
-		tmp := fmt.Sprintf("%d. Name:'%s' Coupon remaining:'%d', Near payday:(%02d.%02d.%d)", id, obj.Name, obj.CouponCount, obj.CouponNearPayDate.Day(), obj.CouponNearPayDate.Month(), obj.CouponNearPayDate.Year())
+
+		tmp := fmt.Sprintf(
+            format,
+            id,
+            obj.Name,
+            obj.CouponCount,
+            obj.CouponNearPayDate.Day(),
+            obj.CouponNearPayDate.Month(),
+            obj.CouponNearPayDate.Year(),
+            obj.CouponPeriod,
+        )
 		bondsTable = append(bondsTable, tmp)
 	}
 
-	var startInd int = 0
-
-	printSlice := func(startInd int) int {
-		var endInd int = min(len(bondsTable)-1, sizeY-1)
-
-		if startInd >= len(bondsTable) {
-			startInd = len(bondsTable) - 1
-		}
-
-		if startInd < 0 {
-			startInd = 0
-		}
-
-		var x int = 1
-		var y int = 1
-
-		for ind := startInd; ind <= endInd; ind++ {
-			win.MovePrint(y, x, bondsTable[ind])
-			y++
-		}
-
-		return startInd
-	}
-
-	var input goncurses.Key
-
-	for input != ExitKey {
-		win.Clear()
-		win.Box(0, 0)
-		win.MovePrint(0, sizeX/2-6, "|Bonds List|")
-		win.Refresh()
-
-		switch input {
-		case ScrollUpKey:
-			// startInd = printSlice(startInd - 1)
-			startInd -= 1
-
-		case ScrollDownKey:
-			// startInd = printSlice(startInd + 1)
-			startInd += 1
-		}
-
-		startInd = printSlice(startInd)
-		input = win.GetChar()
-	}
+    return PopUpScrollableList(bondsTable, "|Bonds List|", sizeY, posY, posX)
 }
 
 /* Ask user for bonds params and create new one */
 func CreateBondsByUser() (*bonds.BondsData, error) {
 	Terminal.Print("***Bonds Create***")
-	question := "Name: "
-	name, err := Terminal.AskString(question)
+	name, err := Terminal.AskString("Name: ")
 
 	if err != nil {
 		return nil, err
 	}
 
-	question = "Coupons count: "
-	couponCount, err := Terminal.AskInt(question)
+	couponCount, err := Terminal.AskInt("Coupons count: ")
 
 	if err != nil {
 		return nil, err
 	}
 
-	question = "Nearest pay day[dd.mm.yyyy]: "
-	couponNearestPayDate, err := Terminal.AskDate(question, DefaultDateLayout)
+	couponNearestPayDate, err := Terminal.AskDate("Nearest pay day[dd.mm.yyyy]: ", DefaultDateLayout)
 
 	if err != nil {
 		return nil, err
 	}
 
-	question = "Next pay day[dd.mm.yyyy]: "
-	couponNextPayDate, err := Terminal.AskDate(question, DefaultDateLayout)
-
+	couponNextPayDate, err := Terminal.AskDate("Next pay day[dd.mm.yyyy](can be empty): ", DefaultDateLayout)
 	Terminal.Print("******************")
 
 	if err != nil {
-		return nil, err
+        if couponCount == 1 {
+            couponNextPayDate = time.Time{}
+        } else {
+            return nil, err
+        }
 	}
 
 	result := bonds.BondsDataNew()
@@ -358,21 +298,12 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 
 // TODO:
 // [ ] add more info in BoundsData
-// [x] by key show list of all bonds in window (format: "index | Name | ...")
-// [ ]      add command 'delete <index>'
 
 // TODO:
-// [ ] Create a small system for hold windows data/functions and call them
-//      usefull for substitute window
-//      implement this as finite state machine
-//      at register pass key and window for return into it by key pressing
-//          Win.AddWay(key, window) -> add a way into self.WayMap -> at each key pressing check is key in WayMap and return window if yes
-//      Each window wrap must implement function for input commads ':<command>' and execute them
 // [ ] create different windows
 //     [x] for graph
 //     [1/2] for info by year
-//         payments count
-//         payments in roubles
+//       + payments count
 
 // TODO:
 // [1/2] by key save bonds data in json in default path
@@ -404,12 +335,10 @@ func main() {
 	defer main.FreeWindow()
 	var graphOffsetX int = (mainWidth - 6) / 12
     var focus *FSMWindow = main
-    main.SetTitle("|Main|")
-    main.RegisterInput(IncreaseYearKey, func() bool {
+    main.SetTitle("|Main|").RegisterInput(IncreaseYearKey, func() bool {
         year++
         return true
-    })
-    main.RegisterInput(DecreaseYearKey, func() bool {
+    }).RegisterInput(DecreaseYearKey, func() bool {
         year--
 
         if year < CurrentYear {
@@ -417,8 +346,7 @@ func main() {
         }
         
         return true
-    })
-    main.RegisterInput(ExitKey, func() bool {
+    }).RegisterInput(ExitKey, func() bool {
         tmp := Terminal.AskChar("Really exit?[y/n]")
 
         if tmp == 'y' || tmp == 'Y' {
@@ -426,8 +354,7 @@ func main() {
         }
 
         return true
-    })
-    main.RegisterInput(StartOfCommandKey, func() bool {
+    }).RegisterInput(StartOfCommandKey, func() bool {
         command, err := Terminal.AskString("")
 
         if err != nil {
@@ -437,11 +364,28 @@ func main() {
 
         ExecuteCommand(command)
         return true
+    }).RegisterInput(HelpKey, func() bool {
+        arr := []string{
+            fmt.Sprintf("  Keys for graph window"),
+            fmt.Sprintf("%c - Exit from programm, or close sub-window", ExitKey),
+            fmt.Sprintf("%c - Show next year info", IncreaseYearKey),
+            fmt.Sprintf("%c - Show previous year info", DecreaseYearKey),
+            fmt.Sprintf("%c - Start write command to terminal", StartOfCommandKey),
+            fmt.Sprintf("%c - Show this window", HelpKey),
+        }
+
+        err := PopUpScrollableList(arr, "|Info|", main.SizeY, main.PosY, main.posX)
+
+        if err != nil {
+            Terminal.Print(err.Error())
+        }
+
+        return true
     })
 
-    var yearInfoPtr *YearInfo = new(YearInfo)
+    yearInfo := YearInfo{CurrentYear, 0}
     main.SetCustomDraw(func() {
-		*yearInfoPtr = DrawGraphByYear(AllBonds, year, main.Window, MaxX, MaxY-2, graphOffsetX)
+		yearInfo = DrawGraphByYear(AllBonds, year, main.Window, MaxX, MaxY-2, graphOffsetX)
     })
 
 	infoHeight, infoWidth := MaxY/2, (MaxX/3)*1
@@ -468,108 +412,13 @@ func main() {
 
 	defer Terminal.Delete()
 	Terminal.Print("Inited successfully. Type ':help' for info")
-	// var input goncurses.Key
 	var loop bool = true
 
 	for loop {
 		info.Box(0, 0)
 
-		// switch input {
-        // DONE
-		// case ExitKey:
-		// 	{
-		// 		tmp := Terminal.AskChar("Really exit?[y/n]")
-		//
-		// 		if tmp == 'y' || tmp == 'Y' {
-		// 			loop = false
-		// 			continue
-		// 		}
-		// 	}
-//
-		// case HelpKey:
-		// 	HelpWindow()
-//
-        // DONE
-		// case IncreaseYearKey:
-		// 	year++
-//
-        // DONE
-		// case DecreaseYearKey:
-		// 	year--
-		//
-		// 	if year < CurrentYear {
-		// 		year = CurrentYear
-		// 	}
-//
-		// case AppendBondsKey:
-		// 	{
-		// 		data, err := CreateBondsByUser()
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		//
-		// 		} else {
-		// 			AllBonds.Append(data)
-		// 		}
-		//
-		// 	}
-//
-		// case SaveBondsKey:
-		// 	{
-		// 		msg := "Filename for save: "
-		// 		filename, err := Terminal.AskString(msg)
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		// 			continue
-		// 		}
-		//
-		// 		err = AllBonds.SaveToFile(filename)
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		// 		}
-		// 	}
-//
-		// case LoadBondsKey:
-		// 	{
-		// 		msg := "Filename for load: "
-		// 		filename, err := Terminal.AskString(msg)
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		// 			continue
-		// 		}
-		//
-		// 		err = AllBonds.LoadFromFile(filename)
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		// 		}
-		//
-		// 	}
-//
-		// case ListBondsKey:
-		// 	DrawListBonds(AllBonds, mainHeight, mainWidth, mainPosY, mainPosX)
-//
-        // DONE
-		// case StartOfCommandKey:
-		// 	{
-		// 		command, err := Terminal.AskString("")
-		//
-		// 		if err != nil {
-		// 			Terminal.Print(err.Error())
-		// 			continue
-		// 		}
-		//
-		// 		ExecuteCommand(command)
-		// 	}
-		// }
-
-        focus.Draw()
-
-		// yearInfo := DrawGraphByYear(AllBonds, year, main.Window, MaxX, MaxY-2, graphOffsetX)
-		DrawInfoByYear(info, infoWidth, infoHeight, *yearInfoPtr)
+        focus.Draw() // this must be before DrawInfoByYear
+		DrawInfoByYear(info, infoWidth, infoHeight, yearInfo)
 
 		stdscr.MovePrintf(MaxY-1, 0, "Help:%c ", HelpKey)
 		stdscr.Printf("Exit:%c ", ExitKey)
@@ -581,26 +430,22 @@ func main() {
         focus.DrawBox()
 		info.Refresh()
 
-        nextWin, isWork := focus.Input()
+        var isWork bool
+        focus, isWork = focus.Input()
 
         if !isWork {
             loop = false
             continue
         }
 
-        if nextWin != nil {
-            focus = nextWin
-        }
-
-		// input = stdscr.GetChar()
-
 	}
 }
 
 func init() {
-	RegisterCommand("help", Command{"':help <command>'-Show info about commands", CommandHelp})
-	RegisterCommand("list", Command{"Show list of all bonds", CommandList})
-	RegisterCommand("save", Command{"'save <file>' - Save bonds info into file", CommandSave})
-	RegisterCommand("load", Command{"'load <file>' - Load bonds info from file", CommandLoad})
-	RegisterCommand("delete", Command{"'delete <index>' - Delete bonds info from list", CommandDelete})
+	RegisterCommand("help", Command{"':help <command>' - Show info about commands", CommandHelp})
+    RegisterCommand("list", Command{"':list' - Show list of all bonds", CommandList})
+    RegisterCommand("save", Command{"':save <file>' - Save bonds info into file", CommandSave})
+    RegisterCommand("load", Command{"':load <file>' - Load bonds info from file", CommandLoad})
+    RegisterCommand("new", Command{"':new' - Create new bonds and append it into list", CommandNewBonds})
+    RegisterCommand("delete", Command{"':delete <index>' - Delete bonds info from list", CommandDelete})
 }
