@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	// "os"
 	"bonds_payment_calendar/bonds"
 	"bonds_payment_calendar/terminal"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gbin/goncurses"
@@ -20,25 +16,6 @@ type YearInfo struct {
 	PaymentCount int
 }
 
-/*
-Terminal command signature:
-    [COMMAND] [OPTIONAL ARGUMENTS]...
-    COMMAND:
-        always string
-    OPTIONAL ARGUMENTS:
-        always string
-    Each command convert arguments to type what they need
-    Each command processing function return (error)
-    Each command processing function recieve a slice of string (arguments without command)
-    Each command processing function have fixed signature
-*/
-
-type CommandProcessing func([]string) error
-type Command struct {
-    Info string
-    Executor CommandProcessing
-}
-
 var (
 	MaxX int
 	MaxY int
@@ -47,8 +24,6 @@ var (
 	Terminal    = terminal.TerminalNew()
 
 	AllBonds = bonds.BondsNew()
-
-    CommandTable = make(map[string]Command)
 )
 
 const (
@@ -67,68 +42,14 @@ const (
 	DefaultDateLayout = "02.01.2006"
 )
 
-/* Return error if command not exist in CommandTable, nil otherwise */
-func IsCommandExist(command string) error {
-    var err error
-    _, exist := CommandTable[command]
-
-    if !exist {
-        err = fmt.Errorf("Unknown command: '%s'", command)
-    }
-
-    return err
-}
-
-/* Search for command executor and call it, print error in terminal for any errors occured */
-func ExecuteCommand(input string) {
-    splitted := strings.Split(input, " ")
-
-    if len(splitted) == 0 {
-        return
-    }
-
-    err := IsCommandExist(splitted[0])
-
-    if err != nil {
-        Terminal.Print(err.Error())
-        return
-    }
-
-    commandStruct, _ := CommandTable[splitted[0]]
-
-    err = commandStruct.Executor(splitted[1:])
-
-    if err != nil {
-        Terminal.Print(err.Error())
-    }
-}
-
-func CommandExit(args []string) error {
-    var arg int
-    var err error
-
-    if len(args) >= 1 {
-        arg, err = strconv.Atoi(args[0])
-
-        if err != nil {
-            return err
-        }
-    }
-
-    os.Exit(arg)
-
-    return err
-}
-
 func CommandHelp(args []string) error {
-    var err error
-
     if len(args) == 0 {
-        Terminal.Print("Usage: help <command> - Show info about command")
-        return err
+        helpCommand, _ := CommandTable["help"]
+        Terminal.Print(helpCommand.Info)
+        return nil
     }
 
-    err = IsCommandExist(args[0])
+    err := IsCommandExist(args[0])
 
     if err != nil {
         return err
@@ -138,6 +59,92 @@ func CommandHelp(args []string) error {
     Terminal.Print("\t" + args[0])
     Terminal.Print(commandStruct.Info)
 
+    return err
+}
+
+func CommandList(args []string) error {
+    DrawListBonds(AllBonds, MaxY - 1, MaxX / 3 * 2, 0, 0)
+    return nil
+}
+
+func CommandLoad(args []string) error {
+    var filename string
+
+    if len(args) == 0 {
+        input, err := Terminal.AskString("Filename for load:")
+
+        if err != nil {
+            return err
+        }
+
+        filename = input
+
+    } else {
+        filename = args[0]
+    }
+
+    err := AllBonds.LoadFromFile(filename)
+
+    if err != nil {
+        return err
+    }
+
+    Terminal.Print(fmt.Sprintf("Loaded: %d bonds", len(AllBonds.Bonds)))
+
+    return err
+}
+
+func CommandSave(args []string) error {
+    var filename string
+
+    if len(args) == 0 {
+        input, err := Terminal.AskString("Filename for save:")
+
+        if err != nil {
+            return err
+        }
+
+        filename = input
+
+    } else {
+        filename = args[0]
+    }
+
+    err := AllBonds.SaveToFile(filename)
+
+    if err != nil {
+        return err
+    }
+
+    Terminal.Print(fmt.Sprintf("Saved: %d bonds", len(AllBonds.Bonds)))
+
+    return err
+}
+
+func CommandDelete(args []string) error {
+    var index int
+    var err error
+
+    if len(args) == 0 {
+        tmp, err := Terminal.AskInt("Index for delete:")
+
+        if err != nil {
+            return err
+        }
+
+        index = tmp
+
+    } else {
+        tmp, err := strconv.Atoi(args[0])
+
+        if err != nil {
+            return err
+        }
+
+        index = tmp
+    }
+
+    AllBonds.Bonds, err = SliceRemoveByIndex(AllBonds.Bonds, index)
     return err
 }
 
@@ -267,12 +274,12 @@ func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
 	printSlice := func(startInd int) int {
 		var endInd int = min(len(bondsTable)-1, sizeY-1)
 
-		if startInd < 0 {
-			startInd = 0
-		}
-
 		if startInd >= len(bondsTable) {
 			startInd = len(bondsTable) - 1
+		}
+
+		if startInd < 0 {
+			startInd = 0
 		}
 
 		var x int = 1
@@ -296,13 +303,15 @@ func DrawListBonds(bondsArr *bonds.Bonds, sizeY, sizeX, posY, posX int) {
 
 		switch input {
 		case ScrollUpKey:
-			startInd = printSlice(startInd - 1)
+			// startInd = printSlice(startInd - 1)
+			startInd -= 1
 
 		case ScrollDownKey:
-			startInd = printSlice(startInd + 1)
+			// startInd = printSlice(startInd + 1)
+			startInd += 1
 		}
 
-		printSlice(startInd)
+		startInd = printSlice(startInd)
 		input = win.GetChar()
 	}
 }
@@ -351,9 +360,15 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // TODO:
 // [ ] add more info in BoundsData
 // [x] by key show list of all bonds in window (format: "index | Name | ...")
-// [ ]      in list window by key delete choosen bonds
+// [ ]      add command 'delete <index>' 
 
 // TODO:
+// [ ] Create a small system for hold windows data/functions and call them
+//      usefull for substitute window
+//      implement this as finite state machine
+//      at register pass key and window for return into it by key pressing
+//          Win.AddWay(key, window) -> add a way into self.WayMap -> at each key pressing check is key in WayMap and return window if yes
+//      Each window wrap must implement function for input commads ':<command>' and execute them
 // [ ] create different windows
 //     [x] for graph
 //     [1/2] for info by year
@@ -364,19 +379,6 @@ func CreateBondsByUser() (*bonds.BondsData, error) {
 // [1/2] by key save bonds data in json in default path
 // [ ] Create way to init default path and save into it
 //      for now - ask for path and save into it
-
-// TODO:
-// [x] create terminal window (and maybe struct for wrap window)
-//      ask all input through terminal
-//      print all error, output to terminal
-
-// TODO:
-// option 1: Add special commands by tab
-//      press tab -> open window with commands -> run commands by pressing key
-// option 2: Add commands through terminal
-//      press ':' -> ask input in terminal -> run command or print error
-//      for command 'map[string]struct{infoStr, callableFunc}' can be created
-
 
 func main() {
 	stdscr, err := goncurses.Init()
@@ -539,6 +541,9 @@ func main() {
 }
 
 func init() {
-    CommandTable["exit"] = Command{"Exit from programm with terminal breaking", CommandExit}
-    CommandTable["help"] = Command{"'help <command>'-Show info about commands", CommandHelp}
+    RegisterCommand("help", Command{"':help <command>'-Show info about commands", CommandHelp})
+    RegisterCommand("list", Command{"Show list of all bonds", CommandList})
+    RegisterCommand("save", Command{"'save <file>' - Save bonds info into file", CommandSave})
+    RegisterCommand("load", Command{"'load <file>' - Load bonds info from file", CommandLoad})
+    RegisterCommand("delete", Command{"'delete <index>' - Delete bonds info from list", CommandDelete})
 }
